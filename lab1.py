@@ -408,16 +408,95 @@ def plot_solution(cycle1, cycle2, coordinates):
     plt.legend()
     plt.show()
 
+def sim(distance_matrix, coordinates, n,method):
+    cycle1 =[]
+    cycle2 =[]
+    print(m)
+    if method == "heuristic_algorithm_regret_cycles":
+       cycle1, cycle2 = heuristic_algorithm_regret_cycles(distance_matrix, n) 
+    elif method == "heuristic_algorithm_regret_weighted":
+        cycle1, cycle2 = heuristic_algorithm_regret_weighted(distance_matrix, n)
+    elif method == "greedy_algorithm_cycle":
+        cycle1, cycle2 = greedy_algorithm_cycle(distance_matrix, n)
+    elif method == "greedy_algorithm_nearest_neighbour":
+        cycle1, cycle2 = greedy_algorithm_nearest_neighbour(distance_matrix, n)
+    elif method == "heuristic_algorithm_regret":
+        cycle1, cycle2 = heuristic_algorithm_regret(distance_matrix, n)
 
-file_path = "kroa200.tsp"
-distance_matrix, coordinates, n = read_instance(file_path)
+        
+    length1 = cycle_length(cycle1, distance_matrix)
+    length2 = cycle_length(cycle2, distance_matrix)
+    return cycle1, cycle2, (length1+length2)
 
-cycle1, cycle2 = heuristic_algorithm_regret_weighted(distance_matrix, n)
+methods = [
+ #   "heuristic_algorithm_regret_cycles",
+   "heuristic_algorithm_regret_weighted",
+ #   "greedy_algorithm_cycle",
+ #   "greedy_algorithm_nearest_neighbour",
+    "heuristic_algorithm_regret"
+]
+file_paths = ["kroB200.tsp", "kroA200.tsp"]
+NUM_ITTER =10
+results = {}
+NUM_ITTER =10
+for file in file_paths:
+    distance_matrix, coordinates, n = read_instance(file)
+    results[file] = {}
 
-length1 = cycle_length(cycle1, distance_matrix)
-length2 = cycle_length(cycle2, distance_matrix)
-print(f"Długość cyklu 1: {length1}")
-print(f"Długość cyklu 2: {length2}")
-print(f"Łączna długość: {length1 + length2}")
+    for m in methods:
+        best_cycle1, best_cycle2, best_result = None, None, float("inf")
+        result_list = []
 
-plot_solution(cycle1, cycle2, coordinates)
+        for i in range(NUM_ITTER):
+            print(f"Running {m} on {file}, iteration {i}")
+            cycle1, cycle2, result = sim(distance_matrix, coordinates, n, m)
+            result_list.append(result)
+
+            if result < best_result:
+                best_result = result
+                best_cycle1, best_cycle2 = cycle1, cycle2
+
+        results[file][m] = {
+            "best_cycle1": best_cycle1,
+            "best_cycle2": best_cycle2,
+            "min_result": min(result_list),
+            "max_result": max(result_list),
+            "sum_results": sum(result_list)
+        }
+
+instances = list(results.keys())
+header = f"{'Metoda':<40}" + "".join([f"{inst:<30}" for inst in instances])
+table_lines = [header, "-" * len(header)]
+
+for method in methods:
+    row = f"{method:<40}"  # Nazwa metody
+    for instance in instances:
+        if method in results[instance]:  
+            data = results[instance][method]
+            avg = round(data["sum_results"] / NUM_ITTER, 2) if data["sum_results"] is not None else "N/A"
+            min_val = data["min_result"] if data["min_result"] is not None else "N/A"
+            max_val = data["max_result"] if data["max_result"] is not None else "N/A"
+            row += f"{avg} ({min_val} – {max_val})".ljust(30)
+        else:
+            row += "Brak danych".ljust(30)
+    table_lines.append(row)
+
+
+# Zapis do pliku
+output_file = "wyniki_tabela.txt"
+with open(output_file, "w", encoding="utf-8") as f:
+    f.write("\n".join(table_lines))
+
+# Wyświetlenie tabeli w konsoli
+print("\n".join(table_lines))
+print(f"\nWyniki zapisane do pliku: {output_file}")
+for file, methods_results in results.items():
+    print(f"\n=== Wyniki dla pliku: {file} ===")
+    distance_matrix, coordinates, n = read_instance(file)
+    for method, data in methods_results.items():
+        print(f"\nMetoda: {method}")
+        print(f" - Najlepszy wynik: {data['min_result']}")
+        print(f" - Najgorszy wynik: {data['max_result']}")
+        print(f" - Średnia wyników: {data['sum_results']/NUM_ITTER}")
+        plot_solution(data['best_cycle1'],data['best_cycle2'],coordinates)
+
