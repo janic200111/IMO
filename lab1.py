@@ -373,7 +373,7 @@ def heuristic_algorithm_regret_weighted(
                 score = weight_regret * regret + (-1) * weight_greedy * greedy_value
 
                 if score > best_score2:
-                    best_score2 = regret
+                    best_score2 = score
                     best_new_node2 = node
                     best_new_position2 = insertion_costs[0][1]
 
