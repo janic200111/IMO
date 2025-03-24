@@ -3,14 +3,14 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 methods = [
- #   "heuristic_algorithm_regret_cycles",
+    "heuristic_algorithm_regret_cycles",
    "heuristic_algorithm_regret_weighted",
- #   "greedy_algorithm_cycle",
- #   "greedy_algorithm_nearest_neighbour",
-    "heuristic_algorithm_regret"
+    "greedy_algorithm_cycle",
+    "greedy_algorithm_nearest_neighbour",
+   # "heuristic_algorithm_regret"
 ]
 file_paths = ["kroB200.tsp", "kroA200.tsp"]
-NUM_ITTER =10
+NUM_ITTER =2
 
 def read_instance(file_path):
     coordinates = []
@@ -390,16 +390,15 @@ def cycle_length(cycle, distance_matrix):
     return length
 
 
-def plot_solution(cycle1, cycle2, coordinates):
+def plot_solution(cycle1, cycle2, coordinates,i):
     cycle1_coords = [coordinates[i] for i in cycle1]
     cycle2_coords = [coordinates[i] for i in cycle2]
 
     cycle1_coords.append(cycle1_coords[0])
     cycle2_coords.append(cycle2_coords[0])
 
-    plt.figure(figsize=(10, 10))
-
     cycle1_x, cycle1_y = zip(*cycle1_coords)
+    plt.subplot(2, 2, i)
     plt.plot(cycle1_x, cycle1_y, marker="o", label="Cykl 1", color="b")
 
     cycle2_x, cycle2_y = zip(*cycle2_coords)
@@ -412,10 +411,6 @@ def plot_solution(cycle1, cycle2, coordinates):
     # Dodanie etykiety wierzchołków
     for i, (x, y) in enumerate(coordinates):
         plt.text(x, y, str(i), fontsize=8, ha="right")
-
-    plt.title("Wizualizacja cykli")
-    plt.legend()
-    plt.show()
 
 def sim(distance_matrix, coordinates, n,method):
     cycle1 =[]
@@ -438,7 +433,6 @@ def sim(distance_matrix, coordinates, n,method):
     return cycle1, cycle2, (length1+length2)
 
 results = {}
-NUM_ITTER =10
 for file in file_paths:
     distance_matrix, coordinates, n = read_instance(file)
     results[file] = {}
@@ -493,10 +487,15 @@ print(f"\nWyniki zapisane do pliku: {output_file}")
 for file, methods_results in results.items():
     print(f"\n=== Wyniki dla pliku: {file} ===")
     distance_matrix, coordinates, n = read_instance(file)
-    for method, data in methods_results.items():
+    plt.figure(figsize=(10, 10))
+    for i,(method, data) in enumerate(methods_results.items()):
         print(f"\nMetoda: {method}")
         print(f" - Najlepszy wynik: {data['min_result']}")
         print(f" - Najgorszy wynik: {data['max_result']}")
         print(f" - Średnia wyników: {data['sum_results']/NUM_ITTER}")
-        plot_solution(data['best_cycle1'],data['best_cycle2'],coordinates)
+        plot_solution(data['best_cycle1'],data['best_cycle2'],coordinates,i+1)
+        plt.title(method)
+    plt.suptitle(file)
+    plt.legend()
+    plt.show()
 
