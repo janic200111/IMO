@@ -2,7 +2,15 @@ import math
 import random
 import numpy as np
 import matplotlib.pyplot as plt
-
+methods = [
+ #   "heuristic_algorithm_regret_cycles",
+   "heuristic_algorithm_regret_weighted",
+ #   "greedy_algorithm_cycle",
+ #   "greedy_algorithm_nearest_neighbour",
+    "heuristic_algorithm_regret"
+]
+file_paths = ["kroB200.tsp", "kroA200.tsp"]
+NUM_ITTER =10
 
 def read_instance(file_path):
     coordinates = []
@@ -428,15 +436,6 @@ def sim(distance_matrix, coordinates, n,method):
     length2 = cycle_length(cycle2, distance_matrix)
     return cycle1, cycle2, (length1+length2)
 
-methods = [
- #   "heuristic_algorithm_regret_cycles",
-   "heuristic_algorithm_regret_weighted",
- #   "greedy_algorithm_cycle",
- #   "greedy_algorithm_nearest_neighbour",
-    "heuristic_algorithm_regret"
-]
-file_paths = ["kroB200.tsp", "kroA200.tsp"]
-NUM_ITTER =10
 results = {}
 NUM_ITTER =10
 for file in file_paths:
