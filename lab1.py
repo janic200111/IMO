@@ -56,23 +56,21 @@ def find_first_cycles(distance_matrix, n):
     cycle1 = [start1]
     visited = set(cycle1)
 
-    distances_from_start1 = [distance_matrix[start1][i] for i in range(n)]
-    closest_node1 = distances_from_start1.index(
-        min(dist for i, dist in enumerate(distances_from_start1) if i not in visited)
+    closest_node1 = min(
+        (i for i in range(n) if i not in visited),
+        key=lambda x: distance_matrix[start1][x],
     )
     cycle1.append(closest_node1)
     visited.add(closest_node1)
 
     # wybór drugiego wierzchołka i najbliższego do niego, zakładając, że są przynajmniej 4 wierzchołki
-    start2 = distances_from_start1.index(
-        max(dist for i, dist in enumerate(distances_from_start1) if i not in visited)
-    )
+    start2 = distance_matrix[start1].argmax()
     cycle2 = [start2]
     visited.add(start2)
 
-    distances_from_start2 = [distance_matrix[start2][i] for i in range(n)]
-    closest_node2 = distances_from_start2.index(
-        min(dist for i, dist in enumerate(distances_from_start2) if i not in visited)
+    closest_node2 = min(
+        (i for i in range(n) if i not in visited),
+        key=lambda x: distance_matrix[start2][x],
     )
     cycle2.append(closest_node2)
     visited.add(closest_node2)
@@ -307,8 +305,11 @@ def heuristic_algorithm_regret_cycles(distance_matrix, n):
 
 
 def heuristic_algorithm_regret_weighted(
-    distance_matrix, n, weight_regret=1, weight_greedy=0.1 # żal to różnica pomiędzy odległościami, a greedy to odległość do najbliższego wierzchołka
-):                  # dlatego różnica w wagach (inna skala)
+    distance_matrix,
+    n,
+    weight_regret=1,
+    weight_greedy=0.3,  # żal to różnica pomiędzy odległościami, a greedy to odległość do najbliższego wierzchołka
+):  # dlatego różnica w wagach (inna skala)
 
     cycle1, cycle2, visited = find_first_cycles(distance_matrix, n)
 
