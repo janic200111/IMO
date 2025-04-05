@@ -2,15 +2,17 @@ import math
 import random
 import numpy as np
 import matplotlib.pyplot as plt
+
 methods = [
     "heuristic_algorithm_regret_cycles",
-   "heuristic_algorithm_regret_weighted",
+    "heuristic_algorithm_regret_weighted",
     "greedy_algorithm_cycle",
     "greedy_algorithm_nearest_neighbour",
-   # "heuristic_algorithm_regret"
+    # "heuristic_algorithm_regret"
 ]
 file_paths = ["kroB200.tsp", "kroA200.tsp"]
-NUM_ITTER =2
+NUM_ITTER = 2
+
 
 def read_instance(file_path):
     coordinates = []
@@ -390,7 +392,7 @@ def cycle_length(cycle, distance_matrix):
     return length
 
 
-def plot_solution(cycle1, cycle2, coordinates,i):
+def plot_solution(cycle1, cycle2, coordinates, i):
     cycle1_coords = [coordinates[i] for i in cycle1]
     cycle2_coords = [coordinates[i] for i in cycle2]
 
@@ -398,7 +400,10 @@ def plot_solution(cycle1, cycle2, coordinates,i):
     cycle2_coords.append(cycle2_coords[0])
 
     cycle1_x, cycle1_y = zip(*cycle1_coords)
-    plt.subplot(2, 2, i)
+    
+    if i is not None:
+        plt.subplot(2, 2, i)
+        
     plt.plot(cycle1_x, cycle1_y, marker="o", label="Cykl 1", color="b")
 
     cycle2_x, cycle2_y = zip(*cycle2_coords)
@@ -412,12 +417,13 @@ def plot_solution(cycle1, cycle2, coordinates,i):
     for i, (x, y) in enumerate(coordinates):
         plt.text(x, y, str(i), fontsize=8, ha="right")
 
-def sim(distance_matrix, coordinates, n,method):
-    cycle1 =[]
-    cycle2 =[]
+
+def sim(distance_matrix, coordinates, n, method):
+    cycle1 = []
+    cycle2 = []
     print(m)
     if method == "heuristic_algorithm_regret_cycles":
-       cycle1, cycle2 = heuristic_algorithm_regret_cycles(distance_matrix, n) 
+        cycle1, cycle2 = heuristic_algorithm_regret_cycles(distance_matrix, n)
     elif method == "heuristic_algorithm_regret_weighted":
         cycle1, cycle2 = heuristic_algorithm_regret_weighted(distance_matrix, n)
     elif method == "greedy_algorithm_cycle":
@@ -427,10 +433,9 @@ def sim(distance_matrix, coordinates, n,method):
     elif method == "heuristic_algorithm_regret":
         cycle1, cycle2 = heuristic_algorithm_regret(distance_matrix, n)
 
-        
     length1 = cycle_length(cycle1, distance_matrix)
     length2 = cycle_length(cycle2, distance_matrix)
-    return cycle1, cycle2, (length1+length2)
+    return cycle1, cycle2, (length1 + length2)
 
 
 if __name__ == "__main__":
@@ -458,7 +463,7 @@ if __name__ == "__main__":
                 "best_cycle2": best_cycle2,
                 "min_result": min(result_list),
                 "max_result": max(result_list),
-                "sum_results": sum(result_list)
+                "sum_results": sum(result_list),
             }
 
     instances = list(results.keys())
@@ -468,16 +473,23 @@ if __name__ == "__main__":
     for method in methods:
         row = f"{method:<40}"  # Nazwa metody
         for instance in instances:
-            if method in results[instance]:  
+            if method in results[instance]:
                 data = results[instance][method]
-                avg = round(data["sum_results"] / NUM_ITTER, 2) if data["sum_results"] is not None else "N/A"
-                min_val = data["min_result"] if data["min_result"] is not None else "N/A"
-                max_val = data["max_result"] if data["max_result"] is not None else "N/A"
+                avg = (
+                    round(data["sum_results"] / NUM_ITTER, 2)
+                    if data["sum_results"] is not None
+                    else "N/A"
+                )
+                min_val = (
+                    data["min_result"] if data["min_result"] is not None else "N/A"
+                )
+                max_val = (
+                    data["max_result"] if data["max_result"] is not None else "N/A"
+                )
                 row += f"{avg} ({min_val} – {max_val})".ljust(30)
             else:
                 row += "Brak danych".ljust(30)
         table_lines.append(row)
-
 
     # Zapis do pliku
     output_file = "wyniki_tabela.txt"
@@ -491,14 +503,13 @@ if __name__ == "__main__":
         print(f"\n=== Wyniki dla pliku: {file} ===")
         distance_matrix, coordinates, n = read_instance(file)
         plt.figure(figsize=(10, 10))
-        for i,(method, data) in enumerate(methods_results.items()):
+        for i, (method, data) in enumerate(methods_results.items()):
             print(f"\nMetoda: {method}")
             print(f" - Najlepszy wynik: {data['min_result']}")
             print(f" - Najgorszy wynik: {data['max_result']}")
             print(f" - Średnia wyników: {data['sum_results']/NUM_ITTER}")
-            plot_solution(data['best_cycle1'],data['best_cycle2'],coordinates,i+1)
+            plot_solution(data["best_cycle1"], data["best_cycle2"], coordinates, i + 1)
             plt.title(method)
         plt.suptitle(file)
         plt.legend()
         plt.show()
-
