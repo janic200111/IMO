@@ -432,70 +432,73 @@ def sim(distance_matrix, coordinates, n,method):
     length2 = cycle_length(cycle2, distance_matrix)
     return cycle1, cycle2, (length1+length2)
 
-results = {}
-for file in file_paths:
-    distance_matrix, coordinates, n = read_instance(file)
-    results[file] = {}
 
-    for m in methods:
-        best_cycle1, best_cycle2, best_result = None, None, float("inf")
-        result_list = []
+if __name__ == "__main__":
 
-        for i in range(NUM_ITTER):
-            print(f"Running {m} on {file}, iteration {i}")
-            cycle1, cycle2, result = sim(distance_matrix, coordinates, n, m)
-            result_list.append(result)
+    results = {}
+    for file in file_paths:
+        distance_matrix, coordinates, n = read_instance(file)
+        results[file] = {}
 
-            if result < best_result:
-                best_result = result
-                best_cycle1, best_cycle2 = cycle1, cycle2
+        for m in methods:
+            best_cycle1, best_cycle2, best_result = None, None, float("inf")
+            result_list = []
 
-        results[file][m] = {
-            "best_cycle1": best_cycle1,
-            "best_cycle2": best_cycle2,
-            "min_result": min(result_list),
-            "max_result": max(result_list),
-            "sum_results": sum(result_list)
-        }
+            for i in range(NUM_ITTER):
+                print(f"Running {m} on {file}, iteration {i}")
+                cycle1, cycle2, result = sim(distance_matrix, coordinates, n, m)
+                result_list.append(result)
 
-instances = list(results.keys())
-header = f"{'Metoda':<40}" + "".join([f"{inst:<30}" for inst in instances])
-table_lines = [header, "-" * len(header)]
+                if result < best_result:
+                    best_result = result
+                    best_cycle1, best_cycle2 = cycle1, cycle2
 
-for method in methods:
-    row = f"{method:<40}"  # Nazwa metody
-    for instance in instances:
-        if method in results[instance]:  
-            data = results[instance][method]
-            avg = round(data["sum_results"] / NUM_ITTER, 2) if data["sum_results"] is not None else "N/A"
-            min_val = data["min_result"] if data["min_result"] is not None else "N/A"
-            max_val = data["max_result"] if data["max_result"] is not None else "N/A"
-            row += f"{avg} ({min_val} – {max_val})".ljust(30)
-        else:
-            row += "Brak danych".ljust(30)
-    table_lines.append(row)
+            results[file][m] = {
+                "best_cycle1": best_cycle1,
+                "best_cycle2": best_cycle2,
+                "min_result": min(result_list),
+                "max_result": max(result_list),
+                "sum_results": sum(result_list)
+            }
+
+    instances = list(results.keys())
+    header = f"{'Metoda':<40}" + "".join([f"{inst:<30}" for inst in instances])
+    table_lines = [header, "-" * len(header)]
+
+    for method in methods:
+        row = f"{method:<40}"  # Nazwa metody
+        for instance in instances:
+            if method in results[instance]:  
+                data = results[instance][method]
+                avg = round(data["sum_results"] / NUM_ITTER, 2) if data["sum_results"] is not None else "N/A"
+                min_val = data["min_result"] if data["min_result"] is not None else "N/A"
+                max_val = data["max_result"] if data["max_result"] is not None else "N/A"
+                row += f"{avg} ({min_val} – {max_val})".ljust(30)
+            else:
+                row += "Brak danych".ljust(30)
+        table_lines.append(row)
 
 
-# Zapis do pliku
-output_file = "wyniki_tabela.txt"
-with open(output_file, "w", encoding="utf-8") as f:
-    f.write("\n".join(table_lines))
+    # Zapis do pliku
+    output_file = "wyniki_tabela.txt"
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write("\n".join(table_lines))
 
-# Wyświetlenie tabeli w konsoli
-print("\n".join(table_lines))
-print(f"\nWyniki zapisane do pliku: {output_file}")
-for file, methods_results in results.items():
-    print(f"\n=== Wyniki dla pliku: {file} ===")
-    distance_matrix, coordinates, n = read_instance(file)
-    plt.figure(figsize=(10, 10))
-    for i,(method, data) in enumerate(methods_results.items()):
-        print(f"\nMetoda: {method}")
-        print(f" - Najlepszy wynik: {data['min_result']}")
-        print(f" - Najgorszy wynik: {data['max_result']}")
-        print(f" - Średnia wyników: {data['sum_results']/NUM_ITTER}")
-        plot_solution(data['best_cycle1'],data['best_cycle2'],coordinates,i+1)
-        plt.title(method)
-    plt.suptitle(file)
-    plt.legend()
-    plt.show()
+    # Wyświetlenie tabeli w konsoli
+    print("\n".join(table_lines))
+    print(f"\nWyniki zapisane do pliku: {output_file}")
+    for file, methods_results in results.items():
+        print(f"\n=== Wyniki dla pliku: {file} ===")
+        distance_matrix, coordinates, n = read_instance(file)
+        plt.figure(figsize=(10, 10))
+        for i,(method, data) in enumerate(methods_results.items()):
+            print(f"\nMetoda: {method}")
+            print(f" - Najlepszy wynik: {data['min_result']}")
+            print(f" - Najgorszy wynik: {data['max_result']}")
+            print(f" - Średnia wyników: {data['sum_results']/NUM_ITTER}")
+            plot_solution(data['best_cycle1'],data['best_cycle2'],coordinates,i+1)
+            plt.title(method)
+        plt.suptitle(file)
+        plt.legend()
+        plt.show()
 
