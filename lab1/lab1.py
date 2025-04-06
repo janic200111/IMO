@@ -10,7 +10,7 @@ methods = [
     "greedy_algorithm_nearest_neighbour",
     # "heuristic_algorithm_regret"
 ]
-file_paths = ["kroB200.tsp", "kroA200.tsp"]
+file_paths = ["../data/kroB200.tsp", "../data/kroA200.tsp"]
 NUM_ITTER = 2
 
 
