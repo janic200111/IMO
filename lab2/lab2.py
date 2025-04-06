@@ -5,7 +5,7 @@ import random
 import glob
 import time
 from collections import defaultdict
-
+import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../lab1")))
 from lab1 import (
     read_instance,
@@ -16,18 +16,54 @@ from lab1 import (
 
 folder_path = "../data/"
 
-def plot_multiple_solutions(cycles_and_coordinates):
-    plt.figure(figsize=(15, 15))  # Rozmiar całej figury (szerokość, wysokość)
 
-    for i, (cycle1, cycle2, coordinates) in enumerate(cycles_and_coordinates, start=1):
-        plt.subplot(2, 4, i)
+def plot_multiple_solutions(cycles_and_coordinates,file):
+    plt.figure(figsize=(15, 15))  # Size of the entire figure (width, height)
+
+    for i, (cycle1, cycle2, coordinates,name) in enumerate(cycles_and_coordinates, start=1):
+        print(i,cycle1)
+        plt.subplot(3, 4, i)  # Change to 3 rows and 4 columns for 12 plots
         
-        plot_solution(cycle1, cycle2, coordinates, None)  
+        plot_solution(cycle1, cycle2, coordinates, None)  # Plot each solution
         
-        plt.title(f"Solution {i}")  # Tytuł dla danego wykresu
+        plt.title(name)  # Title for each plot
         
-    plt.tight_layout() 
-    plt.show()
+    plt.tight_layout()  # Adjust the layout for better spacing
+    #plt.show()
+    plt.savefig(f"plt_{file}", bbox_inches='tight')  # Zapis do pliku
+    plt.close('all')
+
+# Function to save results to a text file
+def save_best_results(results,file):
+    """
+    Funkcja zapisuje najlepsze wyniki w formacie:
+    Instancja 1 Instancja 2 ...
+    Metoda 1    średnia (min – max)  ...
+    Metoda 2    średnia (min – max)  ...
+
+    :param results: słownik, gdzie klucze to config_key, a wartości to słowniki z wynikami.
+    """
+    # Zakładamy, że liczba instancji to liczba wyników w result_list
+    num_instances = len(next(iter(results.values()))['result_list'])
+    instance_headers = [f'Instancja {i+1}' for i in range(num_instances)]
+    header = ['Metoda'] + instance_headers
+
+    output = []
+
+    for config_key, config_data in results.items():
+        row = [config_key]
+        for instance_result in config_data['result_list']:
+            mean_value = instance_result  # w tym przypadku to jedna wartość, więc mean = min = max
+            row.append(f'{mean_value:.2f} ({mean_value:.0f} – {mean_value:.0f})')
+        output.append(row)
+
+    # Tworzymy DataFrame i wypisujemy lub zapisujemy
+    df = pd.DataFrame(output, columns=header)
+    print(df.to_string(index=False))
+    df.to_csv(f"results_{file}", index=False, sep=';')
+    return df
+
+
 
 def simple_plot(cycle1, cycle2, coordinates):
     plt.figure(figsize=(10, 10))
@@ -55,6 +91,7 @@ def measure_time_for_local_search(algorithm, cycle1, cycle2, distance_matrix, mo
     
     return end_time - start_time, cycle1, cycle2
 def random_walk(cycle1, cycle2, distance_matrix, max_time):
+    max_time =0.1
     start_time = time.time()
     while time.time() - start_time < max_time:
         # Losowy ruch - wybieramy losowy indeks w cyklach i zamieniamy
@@ -68,8 +105,9 @@ def random_walk(cycle1, cycle2, distance_matrix, max_time):
 
 def swap_between_cycles(cycle1, cycle2, idx1, idx2, distance_matrix):
     # Swap two nodes between cycles
-
+    length = cycle_length(cycle1,distance_matrix) + cycle_length(cycle2,distance_matrix)
     l1 = len(cycle1)
+
     delta1 = (
         0
         + distance_matrix[cycle1[((idx1 - 1) + l1) % l1]][cycle2[idx2]]
@@ -86,15 +124,16 @@ def swap_between_cycles(cycle1, cycle2, idx1, idx2, distance_matrix):
         - distance_matrix[cycle2[((idx2 - 1) + l2) % l2]][cycle2[idx2]]
         - distance_matrix[cycle2[idx2]][cycle2[(idx2 + 1) % l2]]
     )
-
     cycle1[idx1], cycle2[idx2] = cycle2[idx2], cycle1[idx1]
+    if length < cycle_length(cycle1,distance_matrix) + cycle_length(cycle2,distance_matrix):
+        return cycle1, cycle2, 1, 1
 
     return cycle1, cycle2, delta1, delta2
 
 
 def swap_in_cycle_nodes(cycle, idx1, idx2, distance_matrix):
     # Swap two nodes in the same cycle
-
+    length = cycle_length(cycle,distance_matrix)
     l = len(cycle)
     delta = (
         0
@@ -109,11 +148,13 @@ def swap_in_cycle_nodes(cycle, idx1, idx2, distance_matrix):
     )
 
     cycle[idx1], cycle[idx2] = cycle[idx2], cycle[idx1]
+    if length < cycle_length(cycle,distance_matrix):
+        return cycle, 1
 
     return cycle, delta
 
 # Funkcja Greedy Local Search (w wersji zachłannej)
-def greedy_local_search(cycle1, cycle2, distance_matrix, mode ="cycles"):
+def greedy_local_search(cycle1, cycle2, distance_matrix, mode ="edges"):
     indices1 = list(range(len(cycle1)))
     indices2 = list(range(len(cycle2)))
     random.shuffle(indices1)
@@ -124,21 +165,19 @@ def greedy_local_search(cycle1, cycle2, distance_matrix, mode ="cycles"):
         (cycle2, cycle1, indices2, indices1)
     ]:
         for i in idx_cycle:
-            if mode == "cycles":
-                for j in idx_other:
+            for j in idx_cycle:
+                if i == j:
+                    continue
+                if mode == "edges":
+                    new_cycle, delta = swap_in_cycle_edges(cycle, i, j, distance_matrix)
+                else:
+                     new_cycle, delta = swap_in_cycle_nodes(cycle[:], i, j, distance_matrix)
+                if delta < 0:
+                    return new_cycle, other_cycle
+                else:
                     new_cycle, new_other_cycle, delta1, delta2 = swap_between_cycles(cycle[:], other_cycle[:], i, j, distance_matrix)
                     if delta1 + delta2 < 0:
                         return new_cycle, new_other_cycle
-            else:
-                for j in idx_cycle:
-                    if i == j:
-                        continue
-                    new_cycle, delta = swap_in_cycle_edges(cycle[:], i, j, distance_matrix)
-                    if delta < 0:
-                        if cycle == cycle1:
-                            return new_cycle, cycle2
-                        else:
-                            return cycle1, new_cycle
 
     return cycle1, cycle2
 
@@ -146,26 +185,27 @@ def greedy_local_search(cycle1, cycle2, distance_matrix, mode ="cycles"):
 def steepest_local_search(cycle1, cycle2, distance_matrix,mode="cycles"):
     best_delta = float('inf') 
     best_swap = None
-
     for cycle, other_cycle in [(cycle1, cycle2), (cycle2, cycle1)]:
         for i in range(len(cycle)):
-            if mode == "cycles":
-                for j in range(len(other_cycle)):
-                    new_cycle, new_other_cycle, delta1, delta2 = swap_between_cycles(cycle, other_cycle, i, j, distance_matrix)
-                    if delta1 + delta2 < best_delta:
-                        best_delta = delta1 + delta2
-                        best_swap = (new_cycle, new_other_cycle)
-            else:
-                for j in range(len(cycle)):
-                    if i == j:
-                        continue
+            for j in range(len(other_cycle)):
+                if i == j:
+                    continue
+                if mode == "edges":
                     new_cycle, delta = swap_in_cycle_edges(cycle, i, j, distance_matrix)
-                    if delta < best_delta:
-                        best_delta = delta
-                        best_swap = (new_cycle, other_cycle)
+                else:
+                     new_cycle, delta = swap_in_cycle_nodes(cycle[:], i, j, distance_matrix)
+                if delta < best_delta:
+                    best_delta = delta
+                    best_swap = (new_cycle, other_cycle)
+                #else:
+                 #   new_cycle, new_other_cycle, delta1, delta2 = swap_between_cycles(cycle[:], other_cycle[:], i, j, distance_matrix)
+                 #   if delta1 + delta2 < best_delta:
+                 #       best_delta = delta1 + delta2
+                  #      best_swap = (new_cycle, new_other_cycle)
     return best_swap[0],best_swap[1]
 
 def local_search(cycle1, cycle2, distance_matrix,coordinates,mode="cycles",type="greedy"):
+    it =0
     length = cycle_length(cycle1,distance_matrix) + cycle_length(cycle2,distance_matrix)
     while True:
         oc1 = cycle1.copy()
@@ -175,16 +215,14 @@ def local_search(cycle1, cycle2, distance_matrix,coordinates,mode="cycles",type=
         else: 
             cycle1, cycle2 = steepest_local_search(cycle1, cycle2, distance_matrix,mode)
         new_length = cycle_length(cycle1,distance_matrix) + cycle_length(cycle2,distance_matrix)
+        print(it,length,new_length)
+        it+=1
         if length == new_length:
             break
         elif length < new_length:
-            print("ERROR", length,new_length)
-            print(cycle1, oc1)
-            print(cycle2, oc2)
-            simple_plot(oc1,oc2,coordinates)
-            simple_plot(cycle1,cycle2,coordinates)
-            exit()
+            break
         length = new_length
+
     return cycle1, cycle2
 
 def swap_in_cycle_edges(cycle, idx1, idx2, distance_matrix):
@@ -210,67 +248,66 @@ def swap_in_cycle_edges(cycle, idx1, idx2, distance_matrix):
 
     return cycle, delta
 
-def process_file(file_path, init_methods, modes, algorithms, num_iterations=1):
-    """Process each TSP file and execute the algorithms."""
-    results = defaultdict(lambda: {
+def process_file(file_paths, init_methods, modes, algorithms, num_iterations=1):
+    for file_path in file_paths:
+        results = defaultdict(lambda: {
         "result_list": [],
         "best_result": float("inf"),
         "best_cycle1": None,
         "best_cycle2": None
-    })
-
-    for file_path in file_paths:
+        })
+        best_solutions = [] 
         print(f"Processing: {file_path}")
         distance_matrix, coordinates, n = read_instance(file_path)
-        # Zmienna do przechowywania najlepszych cykli do późniejszego rysowania
-        best_solutions = []
-
         for init_method in init_methods:
             for mode in modes:
                 for algorithm in algorithms:
                     config_key = f"{init_method}-{mode}-{algorithm}"
-                    
+
                     for i in range(num_iterations):
                         print(config_key, i)
-                        # Wybór metody inicjalizacji cykli
                         if init_method == "rand":
                             cycle1, cycle2 = random_cycles(n)
                         else:
                             cycle1, cycle2 = heuristic_algorithm_regret_weighted(distance_matrix, n)
-                        
-                        # Przeprowadzenie lokalnego przeszukiwania
-                        time_taken, cycle1, cycle2 = measure_time_for_local_search(algorithm, cycle1, cycle2, distance_matrix, mode,coordinates)
-                        #cycle1, cycle2 = random_walk(cycle1, cycle2, distance_matrix, time_taken)
-                        
-                        # Obliczanie długości rozwiązania
+
+                        if algorithm != "random_walk":
+                            time_taken, cycle1, cycle2 = measure_time_for_local_search(algorithm, cycle1, cycle2, distance_matrix, mode, coordinates)
+                        else:
+                            cycle1, cycle2 = random_walk(cycle1, cycle2, distance_matrix, time_taken)
+
+                        # Calculate the length of the solution
                         length = cycle_length(cycle1, distance_matrix) + cycle_length(cycle2, distance_matrix)
                         results[config_key]["result_list"].append(length)
-                        
-                        # Sprawdzanie, czy jest to najlepszy wynik
+
+                        # Check if it's the best result
                         if length < results[config_key]["best_result"]:
                             results[config_key]["best_result"] = length
                             results[config_key]["best_cycle1"] = cycle1
                             results[config_key]["best_cycle2"] = cycle2
-                            
-                    # Dodajemy najlepsze rozwiązanie (cykl) do listy najlepszych rozwiązań
+                            results[config_key]["name"] = f"{init_method}-{mode}-{algorithm}"
+
+                    # Add best solution for plotting
                     best_cycle1 = results[config_key]["best_cycle1"]
                     best_cycle2 = results[config_key]["best_cycle2"]
-                    best_solutions.append((best_cycle1, best_cycle2, coordinates))
-        
-        # Po zakończeniu obliczeń dla wszystkich plików, rysujemy 8 najlepszych rozwiązań
-    plot_multiple_solutions(best_solutions)
+                    name = results[config_key]["name"]
+                    best_solutions.append((best_cycle1, best_cycle2, coordinates,name))
+
+        # After completing the calculations for all files, plot the best solutions
+        f = os.path.basename(file_path)
+        f = f.split('.')[0]
+        plot_multiple_solutions(best_solutions,f)
+
+        # Save the results to a text file
+        save_best_results(results,f)
 
     return results
 
 if __name__ == "__main__":
     init_methods = ["rand", "reg"]
-    modes = ["cycles", "edges"]
-    algorithms = ["greedy", "steepest"]
+    modes = ["edges","nodes"]
+    algorithms = ["greedy", "steepest","random_walk"]
     file_paths = glob.glob(os.path.join(folder_path, "*.tsp"))
-    num_iterations = 3
+    num_iterations = 1
 
     results = process_file(file_paths, init_methods, modes, algorithms, num_iterations)
-    for file_path, file_results in results.items():
-        print(f"\nSummary for file: {file_path}")
-        for config_key, result_data in file_results.items():
-            print(f"{config_key}: Best result = {result_data}")
