@@ -414,8 +414,8 @@ def plot_solution(cycle1, cycle2, coordinates, i):
     plt.scatter(all_x, all_y, color="black", zorder=5)
 
     # Dodanie etykiety wierzchołków
-    for i, (x, y) in enumerate(coordinates):
-        plt.text(x, y, str(i), fontsize=8, ha="right")
+    #for i, (x, y) in enumerate(coordinates):
+        #plt.text(x, y, str(i), fontsize=8, ha="right")
 
 
 def sim(distance_matrix, coordinates, n, method):
