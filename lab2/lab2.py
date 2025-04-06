@@ -105,7 +105,6 @@ def random_walk(cycle1, cycle2, distance_matrix, max_time):
 
 def swap_between_cycles(cycle1, cycle2, idx1, idx2, distance_matrix):
     # Swap two nodes between cycles
-    length = cycle_length(cycle1,distance_matrix) + cycle_length(cycle2,distance_matrix)
     l1 = len(cycle1)
 
     delta1 = (
@@ -125,15 +124,12 @@ def swap_between_cycles(cycle1, cycle2, idx1, idx2, distance_matrix):
         - distance_matrix[cycle2[idx2]][cycle2[(idx2 + 1) % l2]]
     )
     cycle1[idx1], cycle2[idx2] = cycle2[idx2], cycle1[idx1]
-    if length < cycle_length(cycle1,distance_matrix) + cycle_length(cycle2,distance_matrix):
-        return cycle1, cycle2, 1, 1
 
     return cycle1, cycle2, delta1, delta2
 
 
 def swap_in_cycle_nodes(cycle, idx1, idx2, distance_matrix):
     # Swap two nodes in the same cycle
-    length = cycle_length(cycle,distance_matrix)
     l = len(cycle)
     delta = (
         0
@@ -148,8 +144,6 @@ def swap_in_cycle_nodes(cycle, idx1, idx2, distance_matrix):
     )
 
     cycle[idx1], cycle[idx2] = cycle[idx2], cycle[idx1]
-    if length < cycle_length(cycle,distance_matrix):
-        return cycle, 1
 
     return cycle, delta
 

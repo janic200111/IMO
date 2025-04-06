@@ -1,0 +1,13 @@
+Metoda,Średnia,Min,Max
+rand-nodes-random_walk,340385.3,327832.0,359376.0
+rand-edges-random_walk,337631.5,321721.0,354435.0
+reg-edges-random_walk,336845.0,318926.0,349046.0
+reg-nodes-random_walk,332580.6,315591.0,347246.0
+rand-nodes-greedy,133473.6,69398.0,283390.0
+rand-nodes-steepest,117935.7,83658.0,158815.0
+rand-edges-steepest,46580.0,44997.0,47560.0
+rand-edges-greedy,37172.5,35712.0,39510.0
+reg-nodes-steepest,35360.5,33067.0,38361.0
+reg-edges-greedy,34207.9,31506.0,36974.0
+reg-nodes-greedy,33713.8,31771.0,36495.0
+reg-edges-steepest,33613.5,32379.0,35506.0
