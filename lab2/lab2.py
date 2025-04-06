@@ -126,15 +126,14 @@ def greedy_local_search(cycle1, cycle2, distance_matrix, mode ="cycles"):
         for i in idx_cycle:
             if mode == "cycles":
                 for j in idx_other:
-                    new_cycle, new_other_cycle, delta1, delta2 = swap_between_cycles(cycle, other_cycle, i, j, distance_matrix)
+                    new_cycle, new_other_cycle, delta1, delta2 = swap_between_cycles(cycle[:], other_cycle[:], i, j, distance_matrix)
                     if delta1 + delta2 < 0:
-                        print(delta1,delta2)
                         return new_cycle, new_other_cycle
             else:
                 for j in idx_cycle:
                     if i == j:
                         continue
-                    new_cycle, delta = swap_in_cycle_edges(cycle, i, j, distance_matrix)
+                    new_cycle, delta = swap_in_cycle_edges(cycle[:], i, j, distance_matrix)
                     if delta < 0:
                         if cycle == cycle1:
                             return new_cycle, cycle2
@@ -169,8 +168,8 @@ def steepest_local_search(cycle1, cycle2, distance_matrix,mode="cycles"):
 def local_search(cycle1, cycle2, distance_matrix,coordinates,mode="cycles",type="greedy"):
     length = cycle_length(cycle1,distance_matrix) + cycle_length(cycle2,distance_matrix)
     while True:
-        oc1 = cycle1
-        oc2 =cycle2
+        oc1 = cycle1.copy()
+        oc2 =cycle2.copy()
         if type == "greedy":
             cycle1, cycle2 = greedy_local_search(cycle1, cycle2, distance_matrix,mode)
         else: 
@@ -223,7 +222,6 @@ def process_file(file_path, init_methods, modes, algorithms, num_iterations=1):
     for file_path in file_paths:
         print(f"Processing: {file_path}")
         distance_matrix, coordinates, n = read_instance(file_path)
-        n = 6
         # Zmienna do przechowywania najlepszych cykli do późniejszego rysowania
         best_solutions = []
 
@@ -234,7 +232,6 @@ def process_file(file_path, init_methods, modes, algorithms, num_iterations=1):
                     
                     for i in range(num_iterations):
                         print(config_key, i)
-                        
                         # Wybór metody inicjalizacji cykli
                         if init_method == "rand":
                             cycle1, cycle2 = random_cycles(n)
@@ -243,7 +240,7 @@ def process_file(file_path, init_methods, modes, algorithms, num_iterations=1):
                         
                         # Przeprowadzenie lokalnego przeszukiwania
                         time_taken, cycle1, cycle2 = measure_time_for_local_search(algorithm, cycle1, cycle2, distance_matrix, mode,coordinates)
-                        cycle1, cycle2 = random_walk(cycle1, cycle2, distance_matrix, time_taken)
+                        #cycle1, cycle2 = random_walk(cycle1, cycle2, distance_matrix, time_taken)
                         
                         # Obliczanie długości rozwiązania
                         length = cycle_length(cycle1, distance_matrix) + cycle_length(cycle2, distance_matrix)
@@ -270,11 +267,10 @@ if __name__ == "__main__":
     modes = ["cycles", "edges"]
     algorithms = ["greedy", "steepest"]
     file_paths = glob.glob(os.path.join(folder_path, "*.tsp"))
-    num_iterations = 20
+    num_iterations = 3
 
     results = process_file(file_paths, init_methods, modes, algorithms, num_iterations)
     for file_path, file_results in results.items():
         print(f"\nSummary for file: {file_path}")
         for config_key, result_data in file_results.items():
-            best_result = result_data["best_result"]
-            print(f"{config_key}: Best result = {best_result}")
+            print(f"{config_key}: Best result = {result_data}")
