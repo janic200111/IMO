@@ -13,7 +13,6 @@ from lab1 import (
     plot_solution,
     cycle_length,
 )
-
 folder_path = "../data/"
 
 
@@ -191,33 +190,32 @@ def steepest_local_search(cycle1, cycle2, distance_matrix,mode="cycles"):
                 if delta < best_delta:
                     best_delta = delta
                     best_swap = (new_cycle, other_cycle)
-                #else:
-                 #   new_cycle, new_other_cycle, delta1, delta2 = swap_between_cycles(cycle[:], other_cycle[:], i, j, distance_matrix)
-                 #   if delta1 + delta2 < best_delta:
-                 #       best_delta = delta1 + delta2
-                  #      best_swap = (new_cycle, new_other_cycle)
+                
+                new_cycle, new_other_cycle, delta1, delta2 = swap_between_cycles(cycle[:], other_cycle[:], i, j, distance_matrix)
+                if delta1 + delta2 < best_delta:
+                    best_delta = delta1 + delta2
+                    best_swap = (new_cycle, new_other_cycle)
     return best_swap[0],best_swap[1]
 
-def local_search(cycle1, cycle2, distance_matrix,coordinates,mode="cycles",type="greedy"):
-    it =0
-    length = cycle_length(cycle1,distance_matrix) + cycle_length(cycle2,distance_matrix)
+def local_search(cycle1, cycle2, distance_matrix, coordinates, mode="cycles", type="greedy"):
     while True:
-        oc1 = cycle1.copy()
-        oc2 =cycle2.copy()
+        prev_length = cycle_length(cycle1, distance_matrix) + cycle_length(cycle2, distance_matrix)
+        new_cycle1, new_cycle2 = cycle1, cycle2
+
         if type == "greedy":
-            cycle1, cycle2 = greedy_local_search(cycle1, cycle2, distance_matrix,mode)
-        else: 
-            cycle1, cycle2 = steepest_local_search(cycle1, cycle2, distance_matrix,mode)
-        new_length = cycle_length(cycle1,distance_matrix) + cycle_length(cycle2,distance_matrix)
-        print(it,length,new_length)
-        it+=1
-        if length == new_length:
+            new_cycle1, new_cycle2 = greedy_local_search(cycle1, cycle2, distance_matrix, mode)
+        else:
+            new_cycle1, new_cycle2 = steepest_local_search(cycle1, cycle2, distance_matrix, mode)
+
+        new_length = cycle_length(new_cycle1, distance_matrix) + cycle_length(new_cycle2, distance_matrix)
+
+        if new_length >= prev_length:
             break
-        elif length < new_length:
-            break
-        length = new_length
+
+        cycle1, cycle2 = new_cycle1, new_cycle2
 
     return cycle1, cycle2
+
 
 def swap_in_cycle_edges(cycle, idx1, idx2, distance_matrix):
     # Swap two edges in the same cycle
@@ -298,10 +296,10 @@ def process_file(file_paths, init_methods, modes, algorithms, num_iterations=1):
     return results
 
 if __name__ == "__main__":
-    init_methods = ["rand", "reg"]
+    init_methods = ["rand"]
     modes = ["edges","nodes"]
-    algorithms = ["greedy", "steepest","random_walk"]
+    algorithms = ["steepest", "lm"]
     file_paths = glob.glob(os.path.join(folder_path, "*.tsp"))
-    num_iterations = 1
+    num_iterations = 100
 
     results = process_file(file_paths, init_methods, modes, algorithms, num_iterations)
