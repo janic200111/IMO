@@ -25,60 +25,82 @@ from lab2 import (
     save_best_results,
     plot_multiple_solutions
 )
-def lm_local_search(cycle1, cycle2, distance_matrix):
 
+def lm_local_search(cycle1, cycle2, distance_matrix):
     def evaluate_moves(c1, c2):
+        # Funkcja generuje wszystkie możliwe ruchy poprawiające rozwiązanie
         moves = []
+        # Intra-cycle moves dla pierwszego cyklu (wymiana w ramach jednego cyklu)
         for i in range(len(c1)):
             for j in range(i + 1, len(c1)):
                 new_c1, delta = swap_in_cycle_edges(c1[:], i, j, distance_matrix)
                 if delta < 0:
                     moves.append((delta, ("intra", i, j, "c1")))
+        # Intra-cycle moves dla drugiego cyklu
         for i in range(len(c2)):
             for j in range(i + 1, len(c2)):
                 new_c2, delta = swap_in_cycle_edges(c2[:], i, j, distance_matrix)
                 if delta < 0:
                     moves.append((delta, ("intra", i, j, "c2")))
+        # Inter-cycle moves (wymiana wierzchołków między cyklami)
         for i in range(len(c1)):
             for j in range(len(c2)):
                 _, _, delta1, delta2 = swap_between_cycles(c1[:], c2[:], i, j, distance_matrix)
                 if delta1 + delta2 < 0:
                     moves.append((delta1 + delta2, ("inter", i, j)))
+        # Zwracamy wszystkie ruchy posortowane według poprawy (najlepsze pierwsze)
         return sorted(moves, key=lambda x: x[0])
 
     LM = deque(evaluate_moves(cycle1, cycle2))
 
     while LM:
-        applied = False
-        for _ in range(len(LM)):
-            delta, move = LM.popleft()
+        applied = False 
+        idx = 0
+        LM_list = list(LM)
+        while idx < len(LM_list):
+            delta, move = LM_list[idx]
             if move[0] == "intra":
+                # Ruch wewnątrz jednego cyklu
                 _, i, j, which = move
                 if which == "c1":
                     new_cycle, delta_check = swap_in_cycle_edges(cycle1[:], i, j, distance_matrix)
                     if delta_check == delta:
+                        # Jeśli zmiana dalej poprawia tak samo, stosujemy ruch
                         cycle1 = new_cycle
                         applied = True
                         break
+                    else:
+                        # Ruch nieaktualny - przechodzimy do kolejnego
+                        idx += 1
                 else:
                     new_cycle, delta_check = swap_in_cycle_edges(cycle2[:], i, j, distance_matrix)
                     if delta_check == delta:
                         cycle2 = new_cycle
                         applied = True
                         break
-            else:  # inter
+                    else:
+                        idx += 1
+            else:
+                # Ruch między cyklami
                 _, i, j = move
                 new_c1, new_c2, delta1, delta2 = swap_between_cycles(cycle1[:], cycle2[:], i, j, distance_matrix)
                 if delta1 + delta2 == delta:
+                    # Jeśli zmiana nadal poprawna, wykonujemy
                     cycle1, cycle2 = new_c1, new_c2
                     applied = True
                     break
+                else:
+                    # Ruch nieaktualny - przechodzimy dalej
+                    idx += 1
         if applied:
-            LM = deque(evaluate_moves(cycle1, cycle2))  # regenerate LM
+            # Po każdej udanej zmianie, generujemy na nowo wszystkie możliwe ruchy
+            LM = deque(evaluate_moves(cycle1, cycle2))
         else:
+            # Jeśli żaden ruch nie został wykonany, kończymy przeszukiwanie
             break
 
     return cycle1, cycle2
+
 
 
 def process_file(file_paths, init_methods, modes, algorithms, num_iterations=1):
