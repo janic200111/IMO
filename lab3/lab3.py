@@ -102,6 +102,70 @@ def lm_local_search(cycle1, cycle2, distance_matrix):
     return cycle1, cycle2
 
 
+def candidate_moves(cycle1, cycle2, distance_matrix):
+
+    def find_closest_neighbours(distance_matrix):
+        n = len(distance_matrix)
+        closest_neighbours = {}
+        for i in range(n):
+            closest_neighbours[i] = sorted(
+                range(n), key=lambda x: distance_matrix[i][x]
+            )[1:11]
+            # 10 closest neighbours excluding itself
+
+        return closest_neighbours
+
+    closest_neighbours = find_closest_neighbours(distance_matrix)
+    n = len(distance_matrix)
+
+    is_cycle1 = [1 if i in set(cycle1) else 0 for i in range(n)]
+
+    while True:
+
+        best_delta = 0
+        best_cycles = None
+
+        for i in range(n):
+            for j in closest_neighbours[i]:
+
+                if is_cycle1[i] == is_cycle1[j]:  # both in the same cycle
+                    if is_cycle1[i] == 1:
+                        new_cycle_1, delta = swap_in_cycle_edges(
+                            cycle1[:], cycle1.index(i), cycle1.index(j), distance_matrix
+                        )
+                        new_cycles = (new_cycle_1, cycle2)
+                    elif is_cycle1[i] == 0:
+                        new_cycle_2, delta = swap_in_cycle_edges(
+                            cycle2[:], cycle2.index(i), cycle2.index(j), distance_matrix
+                        )
+                        new_cycles = (cycle1, new_cycle_2)
+
+                elif is_cycle1[i] != is_cycle1[j]:  # swap between cycles
+                    if is_cycle1[i] == 1:
+                        idx_cycle1 = cycle1.index(i)
+                        idx_cycle2 = cycle2.index(j)
+                    else:
+                        idx_cycle1 = cycle2.index(i)
+                        idx_cycle2 = cycle1.index(j)
+
+                    new_cycle_1, new_cycle_2, delta1, delta2 = swap_between_cycles(
+                        cycle1[:], cycle2[:], idx_cycle1, ((idx_cycle2 + 1) % len(cycle2)), distance_matrix
+                    )
+                    delta = delta1 + delta2
+                    new_cycles = (new_cycle_1, new_cycle_2)
+
+                if delta < best_delta:
+                    best_delta = delta
+                    best_cycles = new_cycles
+        
+        if best_delta < 0:
+            cycle1, cycle2 = best_cycles
+            is_cycle1 = [1 if i in set(cycle1) else 0 for i in range(n)]
+        else:
+            break
+
+    return cycle1, cycle2
+
 
 def process_file(file_paths, init_methods, modes, algorithms, num_iterations=1):
     for file_path in file_paths:
@@ -128,6 +192,8 @@ def process_file(file_paths, init_methods, modes, algorithms, num_iterations=1):
                             cycle1, cycle2 = local_search(cycle1, cycle2, distance_matrix,coordinates, mode,algorithm)
                         elif algorithm == "lm":
                             cycle1, cycle2 = lm_local_search(cycle1, cycle2, distance_matrix)
+                        elif algorithm == "candidate":
+                            cycle1, cycle2 = candidate_moves(cycle1, cycle2, distance_matrix)
 
                         end_time = time.time()
                         elapsed_time = end_time - start_time
@@ -163,7 +229,7 @@ if __name__ == "__main__":
     folder_path = "../data/"
     init_methods = ["rand"]
     modes = ["edges"]
-    algorithms = ["lm","steepest"]
+    algorithms = ["lm","steepest", "candidate"]
     file_paths = glob.glob(os.path.join(folder_path, "*.tsp"))
     num_iterations = 2
 
