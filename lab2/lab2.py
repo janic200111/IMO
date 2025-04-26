@@ -20,7 +20,6 @@ def plot_multiple_solutions(cycles_and_coordinates,file):
     plt.figure(figsize=(15, 15))  # Size of the entire figure (width, height)
 
     for i, (cycle1, cycle2, coordinates,name) in enumerate(cycles_and_coordinates, start=1):
-        print(i,cycle1)
         plt.subplot(3, 4, i)  # Change to 3 rows and 4 columns for 12 plots
         
         plot_solution(cycle1, cycle2, coordinates, None)  # Plot each solution
@@ -58,7 +57,6 @@ def save_best_results(results,file):
 
     # Tworzymy DataFrame i wypisujemy lub zapisujemy
     df = pd.DataFrame(output, columns=header)
-    print(df.to_string(index=False))
     df.to_csv(f"results_{file}", index=False, sep=';')
     return df
 

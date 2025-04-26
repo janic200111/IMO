@@ -496,8 +496,6 @@ if __name__ == "__main__":
     with open(output_file, "w", encoding="utf-8") as f:
         f.write("\n".join(table_lines))
 
-    # Wyświetlenie tabeli w konsoli
-    print("\n".join(table_lines))
     print(f"\nWyniki zapisane do pliku: {output_file}")
     for file, methods_results in results.items():
         print(f"\n=== Wyniki dla pliku: {file} ===")
