@@ -77,7 +77,6 @@ def lm_local_search(cycle1, cycle2, distance_matrix):
                         # Jeśli zmiana dalej poprawia tak samo, stosujemy ruch
                         cycle1 = new_cycle
                         applied = True
-                        break
                     else:
                         # Ruch nieaktualny - przechodzimy do kolejnego
                         idx += 1
@@ -88,7 +87,6 @@ def lm_local_search(cycle1, cycle2, distance_matrix):
                     if delta_check == delta:
                         cycle2 = new_cycle
                         applied = True
-                        break
                     else:
                         idx += 1
             else:
@@ -101,7 +99,6 @@ def lm_local_search(cycle1, cycle2, distance_matrix):
                     # Jeśli zmiana nadal poprawna, wykonujemy
                     cycle1, cycle2 = new_c1, new_c2
                     applied = True
-                    break
                 else:
                     # Ruch nieaktualny - przechodzimy dalej
                     idx += 1
@@ -189,6 +186,7 @@ def process_file(file_paths, init_methods, modes, algorithms, num_iterations=1):
         results = defaultdict(
             lambda: {
                 "result_list": [],
+                "time": [],
                 "best_result": float("inf"),
                 "best_cycle1": None,
                 "best_cycle2": None,
@@ -238,6 +236,7 @@ def process_file(file_paths, init_methods, modes, algorithms, num_iterations=1):
                             cycle2, distance_matrix
                         )
                         results[config_key]["result_list"].append(length)
+                        results[config_key]["time"].append(elapsed_time)
                         print(length)
 
                         # Check if it's the best result
@@ -274,15 +273,21 @@ def save_best_results(results, file_name):
         avg_result = sum(config_results["result_list"]) / num_iterations
         min_result = min(config_results["result_list"])
         max_result = max(config_results["result_list"])
+        avg_time = sum(config_results["time"]) / num_iterations
+        min_time = min(config_results["time"])
+        max_time = max(config_results["time"])
         row = [
             config_key,
             avg_result,
             min_result,
             max_result,
+            avg_time,
+            min_time,
+            max_time
         ]
         output.append(row)
 
-    df = pd.DataFrame(output, columns=["Configuration", "Avg", "Min", "Max"])
+    df = pd.DataFrame(output, columns=["Configuration", "avg_result", "min_result", "max_result","avg_time","min_time","max_time"])
     df.to_csv(f"results_{file_name}.csv", index=False)
 
 
@@ -290,8 +295,8 @@ if __name__ == "__main__":
     folder_path = "../data/"
     init_methods = ["rand"]
     modes = ["edges"]
-    algorithms = ["lm","steepest", "candidate", "regret"]
+    algorithms = ["lm"]
     file_paths = glob.glob(os.path.join(folder_path, "*.tsp"))
-    num_iterations = 2
+    num_iterations = 100
 
     results = process_file(file_paths, init_methods, modes, algorithms, num_iterations)
