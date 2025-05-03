@@ -80,35 +80,46 @@ def find_first_cycles(distance_matrix, n):
     return cycle1, cycle2, visited
 
 
-def greedy_algorithm_nearest_neighbour(distance_matrix, n):
-    start1 = random.randint(0, n - 1)
-    distances_from_start = [distance_matrix[start1][i] for i in range(n)]
-    farthest_node = distances_from_start.index(max(distances_from_start))
+def greedy_algorithm_nearest_neighbour(distance_matrix, n, cycle1=None, cycle2=None, visited=None):
+    if cycle1 is None or cycle2 is None or visited is None:
+        start1 = random.randint(0, n - 1)
+        distances_from_start = [distance_matrix[start1][i] for i in range(n)]
+        farthest_node = distances_from_start.index(max(distances_from_start))
 
-    cycle1 = [start1]
-    visited = set(cycle1)
-
-    cycle2 = [farthest_node]
-    visited.add(farthest_node)
+        cycle1 = [start1]
+        cycle2 = [farthest_node]
+        visited = set([start1, farthest_node])
+    else:
+        cycle1 = list(cycle1)
+        cycle2 = list(cycle2)
+        visited = set(visited)
 
     while len(cycle1) + len(cycle2) < n:
-        last_node1 = cycle1[-1]
-        nearest_node1 = min(
-            (i for i in range(n) if i not in visited),
-            key=lambda x: distance_matrix[last_node1][x],
-        )
-        cycle1.append(nearest_node1)
-        visited.add(nearest_node1)
+        remaining = [i for i in range(n) if i not in visited]
+        if not remaining:
+            break
 
-        last_node2 = cycle2[-1]
-        nearest_node2 = min(
-            (i for i in range(n) if i not in visited),
-            key=lambda x: distance_matrix[last_node2][x],
-        )
-        cycle2.append(nearest_node2)
-        visited.add(nearest_node2)
+        if len(remaining) > 0:
+            last_node1 = cycle1[-1]
+            nearest_node1 = min(
+                remaining,
+                key=lambda x: distance_matrix[last_node1][x]
+            )
+            cycle1.append(nearest_node1)
+            visited.add(nearest_node1)
+            remaining.remove(nearest_node1)
+
+        if len(remaining) > 0:
+            last_node2 = cycle2[-1]
+            nearest_node2 = min(
+                remaining,
+                key=lambda x: distance_matrix[last_node2][x]
+            )
+            cycle2.append(nearest_node2)
+            visited.add(nearest_node2)
 
     return cycle1, cycle2
+
 
 
 def greedy_algorithm_cycle(distance_matrix, n):
@@ -310,10 +321,13 @@ def heuristic_algorithm_regret_weighted(
     distance_matrix,
     n,
     weight_regret=1,
-    weight_greedy=0.3,  # żal to różnica pomiędzy odległościami, a greedy to odległość do najbliższego wierzchołka
-):  # dlatego różnica w wagach (inna skala)
-
-    cycle1, cycle2, visited = find_first_cycles(distance_matrix, n)
+    weight_greedy=0.3,
+    cycle1=None,
+    cycle2=None,
+    visited=None
+):
+    if cycle1 is None or cycle2 is None or visited is None:
+        cycle1, cycle2, visited = find_first_cycles(distance_matrix, n)
 
     while len(cycle1) + len(cycle2) < n:
         best_new_node1 = None
@@ -324,7 +338,6 @@ def heuristic_algorithm_regret_weighted(
         best_new_position2 = None
         best_score2 = -float("inf")
 
-        # znalezienie wierzchołka z największym żalem ważonym dla cyklu 1
         for node in range(n):
             if node in visited:
                 continue
@@ -342,8 +355,7 @@ def heuristic_algorithm_regret_weighted(
                 insertion_costs.sort(key=lambda x: x[0])
                 regret = insertion_costs[1][0] - insertion_costs[0][0]
                 greedy_value = insertion_costs[0][0]
-
-                score = weight_regret * regret + (-1) * weight_greedy * greedy_value
+                score = weight_regret * regret - weight_greedy * greedy_value
 
                 if score > best_score1:
                     best_score1 = score
@@ -353,7 +365,6 @@ def heuristic_algorithm_regret_weighted(
         cycle1.insert(best_new_position1 + 1, best_new_node1)
         visited.add(best_new_node1)
 
-        # znalezienie wierzchołka dla cyklu 2
         for node in range(n):
             if node in visited:
                 continue
@@ -371,8 +382,7 @@ def heuristic_algorithm_regret_weighted(
                 insertion_costs.sort(key=lambda x: x[0])
                 regret = insertion_costs[1][0] - insertion_costs[0][0]
                 greedy_value = insertion_costs[0][0]
-
-                score = weight_regret * regret + (-1) * weight_greedy * greedy_value
+                score = weight_regret * regret - weight_greedy * greedy_value
 
                 if score > best_score2:
                     best_score2 = score

@@ -1,11 +1,11 @@
 import glob
 import time
-from collections import defaultdict, deque
+from collections import defaultdict
+import copy
 import sys, os, re
 import pandas as pd
 import random 
 import threading
-MSLS_TRY_NUM = 200
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 
@@ -21,6 +21,8 @@ for name in os.listdir(parent_dir):
 from lab1 import (
     read_instance,
     cycle_length,
+    heuristic_algorithm_regret_weighted,
+    greedy_algorithm_nearest_neighbour
 )
 
 from lab2 import (
@@ -49,10 +51,51 @@ def perturb_cycles(cycle1, cycle2, k):
 def evaluate_length(best_length,best_cycle1,best_cycle2,cycle1,cycle2,distance_matrix):
     length = cycle_length(cycle1, distance_matrix) + cycle_length(cycle2, distance_matrix)
     if length < best_length:
+        if best_length - length > 500:
             print(length)
-            return length,cycle1,cycle2
+        return length,cycle1,cycle2
     
     return best_length,best_cycle1,best_cycle2
+
+def destroy_repair(cycle1, cycle2, distance_matrix, n, destroy_fraction=0.3, random_ratio=0.3):
+
+    combined = cycle1 + cycle2
+    num_to_remove = int(len(combined) * destroy_fraction)
+
+    num_random = int(num_to_remove * random_ratio)
+    num_proximity = num_to_remove - num_random
+
+    random_nodes = set(random.sample(combined, num_random))
+
+    closeness_scores = []
+    for node in cycle1:
+        if node not in random_nodes:
+            min_dist = min(distance_matrix[node][other] for other in cycle2)
+            closeness_scores.append((min_dist, node))
+    for node in cycle2:
+        if node not in random_nodes:
+            min_dist = min(distance_matrix[node][other] for other in cycle1)
+            closeness_scores.append((min_dist, node))
+
+    closeness_scores.sort(key=lambda x: x[0])
+    proximity_nodes = set(node for _, node in closeness_scores[:num_proximity])
+
+    nodes_to_remove = random_nodes.union(proximity_nodes)
+    partial_cycle1 = [v for v in cycle1 if v not in nodes_to_remove]
+    partial_cycle2 = [v for v in cycle2 if v not in nodes_to_remove]
+    visited = set(partial_cycle1 + partial_cycle2)
+
+    repaired_cycle1, repaired_cycle2 = heuristic_algorithm_regret_weighted(
+        distance_matrix,
+        n,
+        cycle1=partial_cycle1,
+        cycle2=partial_cycle2,
+        visited=visited
+    )
+
+    return repaired_cycle1, repaired_cycle2
+
+
 
 def MSLS(distance_matrix,n):
 
@@ -67,7 +110,7 @@ def MSLS(distance_matrix,n):
 
     return best_cycle1,best_cycle2
 
-def ILS(distance_matrix,n,time_to_search):
+def ILS_LNS(distance_matrix,n,time_to_search,mode="ILS"):
 
     best_length = float('inf')
     best_cycle1, best_cycle2 = random_cycles(n)
@@ -75,8 +118,13 @@ def ILS(distance_matrix,n,time_to_search):
     ILS_num_itter = 0
 
     while time.time() - start_time < time_to_search:
-        cycle1, cycle2 = perturb_cycles(best_cycle1,best_cycle2,5)
-        cycle1, cycle2 = lm_local_search(cycle1, cycle2, distance_matrix)
+        if mode == "ILS":
+            cycle1, cycle2 = perturb_cycles(best_cycle1,best_cycle2,5)
+            cycle1, cycle2 = lm_local_search(cycle1, cycle2, distance_matrix)
+        else:
+            if ILS_num_itter == 0:
+                best_cycle1, best_cycle2 = lm_local_search(best_cycle1, best_cycle2, distance_matrix)
+            cycle1, cycle2 = destroy_repair(best_cycle1,best_cycle2,distance_matrix,n)
         ILS_num_itter+=1
         best_length,best_cycle1,best_cycle2 = evaluate_length(best_length,best_cycle1,best_cycle2,cycle1,cycle2,distance_matrix)
     return best_cycle1,best_cycle2, ILS_num_itter
@@ -110,8 +158,9 @@ def process_file(file_paths, init_methods, modes, algorithms, num_iterations=1):
                         if algorithm == "MSLS":
                             cycle1, cycle2 = MSLS(distance_matrix,n)
                             time_for_other = time.time() - start_time
-                        elif algorithm == "ILS":
-                            cycle1, cycle2, num_i = ILS(distance_matrix,n,time_for_other)
+                        else:
+                            cycle1, cycle2, num_i = ILS_LNS(distance_matrix,n,time_for_other,algorithm)
+
                         end_time = time.time()
                         elapsed_time = end_time - start_time
 
@@ -184,9 +233,10 @@ if __name__ == "__main__":
     folder_path = "../data/"
     init_methods = ["rand"]
     modes = ["edges"]
-    algorithms = ["MSLS","ILS"]
+    algorithms = ["MSLS","LNS","ILS"]
     file_paths = glob.glob(os.path.join(folder_path, "*.tsp"))
-    num_iterations = 1
+    num_iterations = 10
+    MSLS_TRY_NUM = 200
 
     hb_thread = threading.Thread(target=heartbeat, args=(30,), daemon=True)
     hb_thread.start()
