@@ -4,8 +4,9 @@ from collections import defaultdict
 import copy
 import sys, os, re
 import pandas as pd
-import random 
+import random
 import threading
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 
@@ -22,21 +23,21 @@ from lab1 import (
     read_instance,
     cycle_length,
     heuristic_algorithm_regret_weighted,
-    greedy_algorithm_nearest_neighbour
+    greedy_algorithm_nearest_neighbour,
 )
 
 from lab2 import (
     random_cycles,
     plot_multiple_solutions,
 )
-from lab3 import (
-    lm_local_search
-)
+from lab3 import lm_local_search
+
 
 def heartbeat(interval=10):
     while True:
         print(f"[{time.strftime('%H:%M:%S')}] Heartbeat...")
         time.sleep(interval)
+
 
 def perturb_cycles(cycle1, cycle2, k):
     cycle1, cycle2 = cycle1.copy(), cycle2.copy()
@@ -44,20 +45,31 @@ def perturb_cycles(cycle1, cycle2, k):
     indices2 = random.sample(range(len(cycle2)), k)
 
     for i in range(k):
-        cycle1[indices1[i]], cycle2[indices2[i]] = cycle2[indices2[i]], cycle1[indices1[i]]
-    
+        cycle1[indices1[i]], cycle2[indices2[i]] = (
+            cycle2[indices2[i]],
+            cycle1[indices1[i]],
+        )
+
     return cycle1, cycle2
 
-def evaluate_length(best_length,best_cycle1,best_cycle2,cycle1,cycle2,distance_matrix):
-    length = cycle_length(cycle1, distance_matrix) + cycle_length(cycle2, distance_matrix)
+
+def evaluate_length(
+    best_length, best_cycle1, best_cycle2, cycle1, cycle2, distance_matrix
+):
+    length = cycle_length(cycle1, distance_matrix) + cycle_length(
+        cycle2, distance_matrix
+    )
     if length < best_length:
         if best_length - length > 500:
             print(length)
-        return length,cycle1,cycle2
-    
-    return best_length,best_cycle1,best_cycle2
+        return length, cycle1, cycle2
 
-def destroy_repair(cycle1, cycle2, distance_matrix, n, destroy_fraction=0.3, random_ratio=0.3):
+    return best_length, best_cycle1, best_cycle2
+
+
+def destroy_repair(
+    cycle1, cycle2, distance_matrix, n, destroy_fraction=0.3, random_ratio=0.3
+):
 
     combined = cycle1 + cycle2
     num_to_remove = int(len(combined) * destroy_fraction)
@@ -90,44 +102,68 @@ def destroy_repair(cycle1, cycle2, distance_matrix, n, destroy_fraction=0.3, ran
         n,
         cycle1=partial_cycle1,
         cycle2=partial_cycle2,
-        visited=visited
+        visited=visited,
     )
 
     return repaired_cycle1, repaired_cycle2
 
 
+def MSLS(distance_matrix, n):
 
-def MSLS(distance_matrix,n):
-
-    best_length = float('inf')
+    best_length = float("inf")
     best_cycle1 = None
     best_cycle2 = None
 
     for i in range(MSLS_TRY_NUM):
         cycle1, cycle2 = random_cycles(n)
         cycle1, cycle2 = lm_local_search(cycle1, cycle2, distance_matrix)
-        best_length,best_cycle1,best_cycle2 = evaluate_length(best_length,best_cycle1,best_cycle2,cycle1,cycle2,distance_matrix)
+        best_length, best_cycle1, best_cycle2 = evaluate_length(
+            best_length, best_cycle1, best_cycle2, cycle1, cycle2, distance_matrix
+        )
 
-    return best_cycle1,best_cycle2
+    return best_cycle1, best_cycle2
 
-def ILS_LNS(distance_matrix,n,time_to_search,mode="ILS"):
 
-    best_length = float('inf')
+def ILS_LNS(distance_matrix, n, time_to_search, mode="ILS"):
+
+    best_length = float("inf")
     best_cycle1, best_cycle2 = random_cycles(n)
     start_time = time.time()
     ILS_num_itter = 0
 
     while time.time() - start_time < time_to_search:
+
         if mode == "ILS":
-            cycle1, cycle2 = perturb_cycles(best_cycle1,best_cycle2,5)
+            cycle1, cycle2 = perturb_cycles(best_cycle1, best_cycle2, 5)
             cycle1, cycle2 = lm_local_search(cycle1, cycle2, distance_matrix)
-        else:
+
+        elif mode == "LNS":
+
             if ILS_num_itter == 0:
-                best_cycle1, best_cycle2 = lm_local_search(best_cycle1, best_cycle2, distance_matrix)
-            cycle1, cycle2 = destroy_repair(best_cycle1,best_cycle2,distance_matrix,n)
-        ILS_num_itter+=1
-        best_length,best_cycle1,best_cycle2 = evaluate_length(best_length,best_cycle1,best_cycle2,cycle1,cycle2,distance_matrix)
-    return best_cycle1,best_cycle2, ILS_num_itter
+                best_cycle1, best_cycle2 = lm_local_search(
+                    best_cycle1, best_cycle2, distance_matrix
+                )
+            cycle1, cycle2 = destroy_repair(
+                best_cycle1, best_cycle2, distance_matrix, n
+            )
+            cycle1, cycle2 = lm_local_search(cycle1, cycle2, distance_matrix)
+
+        elif mode == "LNSa":
+
+            if ILS_num_itter == 0:
+                best_cycle1, best_cycle2 = lm_local_search(
+                    best_cycle1, best_cycle2, distance_matrix
+                )
+            cycle1, cycle2 = destroy_repair(
+                best_cycle1, best_cycle2, distance_matrix, n
+            )
+
+        ILS_num_itter += 1
+        best_length, best_cycle1, best_cycle2 = evaluate_length(
+            best_length, best_cycle1, best_cycle2, cycle1, cycle2, distance_matrix
+        )
+
+    return best_cycle1, best_cycle2, ILS_num_itter
 
 
 def process_file(file_paths, init_methods, modes, algorithms, num_iterations=1):
@@ -143,7 +179,7 @@ def process_file(file_paths, init_methods, modes, algorithms, num_iterations=1):
             }
         )
         best_solutions = []
-        time_for_other =0
+        time_for_other = 0
         print(f"Processing: {file_path}")
         distance_matrix, coordinates, n = read_instance(file_path)
         for init_method in init_methods:
@@ -156,10 +192,12 @@ def process_file(file_paths, init_methods, modes, algorithms, num_iterations=1):
                         num_i = MSLS_TRY_NUM
                         start_time = time.time()
                         if algorithm == "MSLS":
-                            cycle1, cycle2 = MSLS(distance_matrix,n)
+                            cycle1, cycle2 = MSLS(distance_matrix, n)
                             time_for_other = time.time() - start_time
                         else:
-                            cycle1, cycle2, num_i = ILS_LNS(distance_matrix,n,time_for_other,algorithm)
+                            cycle1, cycle2, num_i = ILS_LNS(
+                                distance_matrix, n, time_for_other, algorithm
+                            )
 
                         end_time = time.time()
                         elapsed_time = end_time - start_time
@@ -221,11 +259,23 @@ def save_best_results(results, file_name):
             avg_time,
             min_time,
             max_time,
-            avg_num_i
+            avg_num_i,
         ]
         output.append(row)
 
-    df = pd.DataFrame(output, columns=["Configuration", "avg_result", "min_result", "max_result","avg_time","min_time","max_time","avg_num_i"])
+    df = pd.DataFrame(
+        output,
+        columns=[
+            "Configuration",
+            "avg_result",
+            "min_result",
+            "max_result",
+            "avg_time",
+            "min_time",
+            "max_time",
+            "avg_num_i",
+        ],
+    )
     df.to_csv(f"results_{file_name}.csv", index=False)
 
 
@@ -233,7 +283,7 @@ if __name__ == "__main__":
     folder_path = "../data/"
     init_methods = ["rand"]
     modes = ["edges"]
-    algorithms = ["MSLS","LNS","ILS"]
+    algorithms = ["MSLS", "LNS", "LNSa", "ILS"]
     file_paths = glob.glob(os.path.join(folder_path, "*.tsp"))
     num_iterations = 10
     MSLS_TRY_NUM = 200
