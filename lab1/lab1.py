@@ -362,8 +362,9 @@ def heuristic_algorithm_regret_weighted(
                     best_new_node1 = node
                     best_new_position1 = insertion_costs[0][1]
 
-        cycle1.insert(best_new_position1 + 1, best_new_node1)
-        visited.add(best_new_node1)
+        if best_new_node1 is not None and best_new_position1 is not None:
+            cycle1.insert(best_new_position1 + 1, best_new_node1)
+            visited.add(best_new_node1)
 
         for node in range(n):
             if node in visited:
@@ -389,8 +390,9 @@ def heuristic_algorithm_regret_weighted(
                     best_new_node2 = node
                     best_new_position2 = insertion_costs[0][1]
 
-        cycle2.insert(best_new_position2 + 1, best_new_node2)
-        visited.add(best_new_node2)
+        if best_new_node2 is not None and best_new_position2 is not None:
+            cycle2.insert(best_new_position2 + 1, best_new_node2)
+            visited.add(best_new_node2)
 
     return cycle1, cycle2
 
