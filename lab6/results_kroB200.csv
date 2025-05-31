@@ -1,0 +1,2 @@
+Configuration,avg_result,min_result,max_result,avg_time,min_time,max_time,avg_num_i
+ILS+Kmeans,29878.0,29670.0,30105.0,188.51809146404267,188.40173888206482,188.78392934799194,1208.6

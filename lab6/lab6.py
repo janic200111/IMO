@@ -4,14 +4,15 @@ from collections import defaultdict
 from statistics import mean, stdev
 import sys, os, re
 import pandas as pd
-import random 
+import random
 import threading
 from sklearn.cluster import KMeans
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
-TIME_TO_CAL = 10
-K= 5
-NUM_ITERATIONS = 5
+TIME_TO_CAL = 188.37
+K = 5
+NUM_ITERATIONS = 10
 
 for name in os.listdir(parent_dir):
     full_path = os.path.join(parent_dir, name)
@@ -22,23 +23,12 @@ for name in os.listdir(parent_dir):
     ):
         sys.path.append(full_path)
 
-from lab1 import (
-    read_instance,
-    cycle_length
-)
+from lab1 import read_instance, cycle_length
 
-from lab2 import (
-    plot_multiple_solutions
+from lab2 import plot_multiple_solutions
+from lab3 import lm_local_search
 
-)
-from lab3 import (
-    lm_local_search
-)
-
-from lab4 import (
-    evaluate_length,
-    perturb_cycles
-)
+from lab4 import evaluate_length, perturb_cycles
 
 
 def heartbeat(interval=10):
@@ -65,6 +55,7 @@ def nearest_neighbor_path(nodes, distance_matrix):
 
     return path
 
+
 def initialize_population_knn(n, distance_matrix, coordinates, population_size=20):
     kmeans = KMeans(n_clusters=2, n_init=10, random_state=0).fit(coordinates)
     labels = kmeans.labels_
@@ -82,7 +73,9 @@ def initialize_population_knn(n, distance_matrix, coordinates, population_size=2
         cycle1 = nearest_neighbor_path(cluster1, distance_matrix)
         cycle2 = nearest_neighbor_path(cluster2, distance_matrix)
 
-        total_length = cycle_length(cycle1, distance_matrix) + cycle_length(cycle2, distance_matrix)
+        total_length = cycle_length(cycle1, distance_matrix) + cycle_length(
+            cycle2, distance_matrix
+        )
 
         if total_length not in solution_lengths:
             population.append((cycle1, cycle2, total_length))
@@ -90,11 +83,15 @@ def initialize_population_knn(n, distance_matrix, coordinates, population_size=2
 
     return population, solution_lengths
 
-def ILS_LNS(distance_matrix,coordinates, n, mode="ILS"):
 
-    population, _ = initialize_population_knn(n, distance_matrix, coordinates, population_size=1)
-    best_cycle1, best_cycle2, _ = population[0]
+def ILS_LNS(distance_matrix, coordinates, n, mode="ILS"):
+
     start_time = time.time()
+
+    population, _ = initialize_population_knn(
+        n, distance_matrix, coordinates, population_size=1
+    )
+    best_cycle1, best_cycle2, _ = population[0]
     ILS_num_itter = 0
     best_length = float("inf")
 
@@ -110,7 +107,6 @@ def ILS_LNS(distance_matrix,coordinates, n, mode="ILS"):
         )
 
     return best_cycle1, best_cycle2, ILS_num_itter
-
 
 
 def process_file(file_paths, algorithms, num_iterations=1):
@@ -135,8 +131,8 @@ def process_file(file_paths, algorithms, num_iterations=1):
                 print(config_key, i)
                 start_time = time.time()
                 cycle1, cycle2, num_i = ILS_LNS(
-                                distance_matrix, coordinates , n, algorithm
-                            )
+                    distance_matrix, coordinates, n, "ILS"
+                )
 
                 end_time = time.time()
                 elapsed_time = end_time - start_time
@@ -157,9 +153,7 @@ def process_file(file_paths, algorithms, num_iterations=1):
                     results[config_key]["best_result"] = length
                     results[config_key]["best_cycle1"] = cycle1
                     results[config_key]["best_cycle2"] = cycle2
-                    results[config_key][
-                        "name"
-                    ] = f"{algorithm}"
+                    results[config_key]["name"] = f"{algorithm}"
 
             # Add best solution for plotting
             best_cycle1 = results[config_key]["best_cycle1"]
@@ -198,17 +192,29 @@ def save_best_results(results, file_name):
             avg_time,
             min_time,
             max_time,
-            avg_num_i
+            avg_num_i,
         ]
         output.append(row)
 
-    df = pd.DataFrame(output, columns=["Configuration", "avg_result", "min_result", "max_result","avg_time","min_time","max_time","avg_num_i"])
+    df = pd.DataFrame(
+        output,
+        columns=[
+            "Configuration",
+            "avg_result",
+            "min_result",
+            "max_result",
+            "avg_time",
+            "min_time",
+            "max_time",
+            "avg_num_i",
+        ],
+    )
     df.to_csv(f"results_{file_name}.csv", index=False)
 
 
 if __name__ == "__main__":
     folder_path = "../data/"
-    algorithms = ["ILS"]
+    algorithms = ["ILS+Kmeans"]
     file_paths = glob.glob(os.path.join(folder_path, "*.tsp"))
 
     hb_thread = threading.Thread(target=heartbeat, args=(30,), daemon=True)
