@@ -54,11 +54,15 @@ def calc_similarity_edges(solution1, solution2):
 
     for cycle in solution1:
         for i in range(len(cycle)):
-            edges1.add((cycle[i], cycle[(i + 1) % len(cycle)]))
+            a = cycle[i]
+            b = cycle[(i + 1) % len(cycle)]
+            edges1.add((min(a, b), max(a, b)))
 
     for cycle in solution2:
         for i in range(len(cycle)):
-            edges2.add((cycle[i], cycle[(i + 1) % len(cycle)]))
+            a = cycle[i]
+            b = cycle[(i + 1) % len(cycle)]
+            edges2.add((min(a, b), max(a, b)))
 
     similarity = len(edges1.intersection(edges2))
     return similarity
@@ -180,14 +184,14 @@ def process_file(file_paths):
             + cycle_length(good_solution[1], distance_matrix),
         )
 
-        plot_similarities(
-            random_solutions,
-            good_solution,
-            n,
-            distance_matrix,
-            mode="nodes",
-            data_name=os.path.basename(file_path),
-        )
+        # plot_similarities(
+        #     random_solutions,
+        #     good_solution,
+        #     n,
+        #     distance_matrix,
+        #     mode="nodes",
+        #     data_name=os.path.basename(file_path),
+        # )
 
         plot_similarities(
             random_solutions,
